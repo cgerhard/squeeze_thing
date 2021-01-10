@@ -21,6 +21,7 @@ import uuid
 import asyncio
 import ssl
 import platform
+from urllib import parse
 
 
 class Player(Thing):
@@ -44,11 +45,12 @@ def make_thing(squeeze):
 
     thing = Player(
             squeeze,
-            'urn:dev:ops:squeezebox',
+            'urn:dev:ops:squeezebox:' + squeeze.ident,
             name,
             ['MediaPlayer', 'Squeezebox'],
             'A web connected misic player'
     )
+    thing.set_href_prefix(parse.quote("Squeeze_" + squeeze.ident))
 
     for i,d,s in [('Power', 'Whether the squeezebox is powered on', power),
         ('Pause', 'Whether the squeezebox is paused', pause)]:
@@ -67,7 +69,7 @@ def make_thing(squeeze):
         '@type': 'VolumeProperty',
         'title': 'Volume',
         'type': 'number',
-        'description': "The identity of the player (mac address)",
+        'description': "Volume",
         'minimum': 0,
         'maximum': 100,
         'unit': 'percent',

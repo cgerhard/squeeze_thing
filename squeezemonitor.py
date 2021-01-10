@@ -113,8 +113,17 @@ class SqueezeMon:
         self.cv = Condition()
 
     async def __aenter__(self):
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+        await self.connect()
         self.thr.start()
+
+    async def connect(self):
+        while True:
+            try:
+                self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+                return
+            except ConnectionError:
+                await asyncio.sleep(1)
+
 
     async def Xget_player(self, player):
         r = (await self.send("%s player count ?" % player))[0].split()
@@ -183,8 +192,8 @@ class SqueezeMon:
             async with self.acv:
                 while len(self.cmds) == 0:
                     await self.acv.wait()
-                print("popped")
                 e = self.cmds.pop(0)
+                print("popped", e)
             await self.send(e)
 
     async def push(self, cmd):
@@ -204,14 +213,28 @@ class SqueezeMon:
         loop_forever = lines == 0
         while lines > 0 or loop_forever:
             x = (await self.reader.read(1)).decode('utf-8')
+            if not x:
+                self.writer.close()
+                await self.connect()
+                await self.get_players()
+                await self.subscribe()
+                print("reconnected")
+                res=[]
+                continue
             if x == '\n':
                 r = ''.join(res)
                 res = []
                 if callback:
-                    await callback(r)
+                    print("Recieved", r)
+                    try:
+                        await callback(r)
+                    except Exception as e:
+                        print("Exception:", e)
+                        traceback.print_exc()
                 else:
                     results.append(r)
                 lines = lines - 1
+                continue
 
             res.append(x)
 
@@ -219,7 +242,9 @@ class SqueezeMon:
     
     async def recv(self, lines=1, callback=None):
         try:
-            return await self._recv(lines=lines, callback=callback)
+            r = await self._recv(lines=lines, callback=callback)
+            print("Recieved", ' '.join(r))
+            return r
         except Exception as e:
             print("Exception:", e)
             traceback.print_exc()
@@ -249,9 +274,11 @@ class SqueezeMon:
             if d[2] == "volume":
                 entry.set_property(d[2], abs(int(d[3])), internal=True)
     
+
     async def subscribe(self):
-        await self.send("subscribe power,playlist stop,playlist pause")
-        await self.send("subscribe mixer volume")
+        subscriptions = ["power", "playlist stop", "playlist pause",
+                         "mixer volume"]
+        await self.send("subscribe " + ",".join(subscriptions))
         self.coros = [self.recv(lines=0, callback=self.update),
                 self.popper()]
 
