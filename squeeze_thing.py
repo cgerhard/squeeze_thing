@@ -21,6 +21,7 @@ import uuid
 import asyncio
 import ssl
 import platform
+import socket
 from urllib import parse
 
 
@@ -45,8 +46,8 @@ def make_thing(squeeze):
 
     thing = Player(
             squeeze,
-            'urn:dev:ops:squeezebox:' + squeeze.ident,
-            name,
+            'urn:dev:ops:squeezebox:' + socket.gethostname() +  squeeze.ident,
+            name + "_" + socket.gethostname(),
             ['MediaPlayer', 'Squeezebox'],
             'A web connected misic player'
     )
@@ -56,7 +57,7 @@ def make_thing(squeeze):
         ('Pause', 'Whether the squeezebox is paused', pause)]:
 
         metadata={
-             '@type': 'OnOffProperty' if s == power else 'MutedProperty',
+             '@type': 'OnOffProperty' if s == power else 'PlayingProperty',
              'title': i,
              'type': 'boolean',
              'description': d,
