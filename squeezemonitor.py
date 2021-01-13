@@ -68,7 +68,7 @@ class Squeeze:
             if self.pause != value:
                 v = onoff(value)
                 self.pause = value
-                cmd = '%s playlist pause %d' % (ident, offon(value))
+                cmd = '%s mode %s' % (ident, "play" if offon(value) == 1 else "pause")
         elif attr == "power":
             if self.power != value:
                 v = onoff(value)
@@ -87,7 +87,7 @@ class Squeeze:
                 try:
                     asyncio.run_coroutine_threadsafe(xx(), self.loop).result()
                 except Exception as e:
-                    print("Exception:", e)
+                    print("Exception:", e, flush=True)
                     traceback.print_exc()
 
             self.sqm.push_cb(cb, None)
@@ -141,14 +141,14 @@ class SqueezeMon:
             for key in ["power", "playlist pause", "mixer volume"]:
                 l = len(key.split())
                 r = (await self._send("%s %s ?" % (p["id"], key)))[0]
-                print(r)
+                print(r, flush=True)
                 d = parse.unquote(r).split()
-                print(d)
+                print(d, flush=True)
                 p[key] = d[1+l]
             ident = p["id"]
-            print(p)
+            print(p, flush=True)
             p = Squeeze(self, p, loop=self.loop)
-            print(p)
+            print(p, flush=True)
             self.byid[ident] = p
 
     async def __aexit__(self, *x):
@@ -187,21 +187,21 @@ class SqueezeMon:
         await self.writer.drain()
 
     async def popper(self):
-        print("Popper")
+        print("Popper", flush=True)
         while True:
             async with self.acv:
                 while len(self.cmds) == 0:
                     await self.acv.wait()
                 e = self.cmds.pop(0)
-                print("popped", e)
+                print("popped", e, flush=True)
             await self.send(e)
 
     async def push(self, cmd):
-        print("push")
+        print("push", flush=True)
         async with self.acv:
             self.cmds.append(cmd)
             self.acv.notify_all()
-            print("pushed")
+            print("pushed", flush=True)
 
     async def _send(self, cmd, lines=1):
         await self.send(cmd)
@@ -218,18 +218,18 @@ class SqueezeMon:
                 await self.connect()
                 await self.get_players()
                 await self.subscribe()
-                print("reconnected")
+                print("reconnected", flush=True)
                 res=[]
                 continue
             if x == '\n':
                 r = ''.join(res)
                 res = []
                 if callback:
-                    print("Recieved", r)
+                    print("Recieved", r, flush=True)
                     try:
                         await callback(r)
                     except Exception as e:
-                        print("Exception:", e)
+                        print("Exception:", e, flush=True)
                         traceback.print_exc()
                 else:
                     results.append(r)
@@ -243,15 +243,15 @@ class SqueezeMon:
     async def recv(self, lines=1, callback=None):
         try:
             r = await self._recv(lines=lines, callback=callback)
-            print("Recieved", ' '.join(r))
+            print("Recieved", ' '.join(r), flush=True)
             return r
         except Exception as e:
-            print("Exception:", e)
+            print("Exception:", e, flush=True)
             traceback.print_exc()
 
     def print(self):
         for x in self.players:
-            print(x)
+            print(x, flush=True)
 
     async def update(self, x):
         d = parse.unquote(x).split()
@@ -266,11 +266,11 @@ class SqueezeMon:
         elif d[1] == "name":
             entry.set_property("name", ''.join(d[2:]), internal=True)
         elif d[1] == "playlist":
-            print(d)
+            print(d, flush=True)
             if d[2] == "pause":
                 entry.set_property("pause", d[3], internal=True)
         elif d[1] == "mixer":
-            print(d)
+            print(d, flush=True)
             if d[2] == "volume":
                 entry.set_property(d[2], abs(int(d[3])), internal=True)
     
@@ -284,13 +284,13 @@ class SqueezeMon:
 
 
 async def multiple_tasks(coros):
-    print(coros)
+    print(coros, flush=True)
     res = await asyncio.gather(*coros, return_exceptions=True)
     return res
 
 def handle_exception(loop, context):
-    print("Exception", context["message"])
-    print(context['exception'])
+    print("Exception", context["message"], flush=True)
+    print(context['exception'], flush=True)
 
 def run_and_wait(coros):
     loop = asyncio.get_event_loop()
@@ -312,7 +312,7 @@ async def runit():
         loop.set_exception_handler(handle_exception)
         coros = x.coros + st.coros
         await multiple_tasks(coros)
-        print("done")
+        print("done", flush=True)
 
 
 if __name__ == "__main__":
@@ -320,5 +320,5 @@ if __name__ == "__main__":
     try:
         sys.exit(asyncio.run(runit()))
     except Exception as e:
-        print(e)
+        print(e, flush=True)
 

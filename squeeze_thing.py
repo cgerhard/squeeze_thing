@@ -101,7 +101,7 @@ async def run_async_webthing(rwt):
         server = WebThingServer(MultipleThings(rwt.things, name="SqueezeBox"), port=7777,
                 ssl_options=ssl_context)
         try:
-            print('starting the server')
+            print('starting the server', flush=True)
             logging.info('starting the server')
             server.start()
         except KeyboardInterrupt:
