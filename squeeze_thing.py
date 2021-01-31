@@ -46,7 +46,7 @@ def make_thing(squeeze):
 
     thing = Player(
             squeeze,
-            'urn:dev:ops:squeezebox:' + socket.gethostname() +  squeeze.ident,
+            'urn:dev:ops:squeezebox:' + socket.gethostname() + parse.quote(squeeze.ident),
             name + "_" + socket.gethostname(),
             ['MediaPlayer', 'Squeezebox'],
             'A web connected misic player'
@@ -54,7 +54,7 @@ def make_thing(squeeze):
     thing.set_href_prefix(parse.quote("Squeeze_" + squeeze.ident))
 
     for i,d,s in [('Power', 'Whether the squeezebox is powered on', power),
-        ('Pause', 'Whether the squeezebox is paused', pause)]:
+        ('Pause', 'Whether the squeezebox is palying', pause)]:
 
         metadata={
              '@type': 'OnOffProperty' if s == power else 'PlayingProperty',
@@ -79,6 +79,14 @@ def make_thing(squeeze):
     prop = "volume"
     thing.add_property(Property(thing, prop, value, metadata=metadata))
 
+    metadata={
+         'title': "Playing",
+         'type': 'string',
+         'description': "The currently playing track"
+    }
+    value = Value(squeeze.playing)
+    prop = "playing"
+    thing.add_property(Property(thing, prop, value, metadata=metadata))
     metadata={
          'title': "Identity",
          'type': 'string',
