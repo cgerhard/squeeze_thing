@@ -162,9 +162,11 @@ class SqueezeMon:
         """
         store = self.config.get(CONFIG, "state_file", fallback=STORE)
         try:
-            players = json.loads(open(store, "r"))
-        except:
+            players = json.loads(open(store, "r").read())
+        except Exception as exc:
+            print(exc)
             players = []
+
         r = (await self._send("player count ?"))[0].split()
         n = int(r[-1])
         for i in range(n):
@@ -201,7 +203,7 @@ class SqueezeMon:
         is atomic.
         """
         json.dump(players, open(store + ".tmp", "w"))
-        os.rename(STORE + ".tmp", store)
+        os.rename(store + ".tmp", store)
 
     async def __aexit__(self, *x):
         self._push_cb({ "quit" : True })
