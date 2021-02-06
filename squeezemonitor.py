@@ -15,8 +15,8 @@
 """
 
 CONFIG = "CONFIG"
-CONFIG_FILE = "/usr/local/etc/squeeze_monitor.cfg"
-STORE="/var/local/squeeze_monitor/squeeze_players.json"
+CONFIG_FILE = "/usr/local/etc/squeeze_thing.cfg"
+STORE="/var/local/squeeze_thing/squeeze_players.json"
 from  threading import Thread, Condition
 import asyncio
 import urllib
