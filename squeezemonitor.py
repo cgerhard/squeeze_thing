@@ -28,6 +28,7 @@ import sys
 from getopt import getopt, GetoptError
 from urllib import parse
 from configparser import ConfigParser
+from broadcast import find_server
 
 def onoff(v):
     return str(v) == '1'
@@ -117,8 +118,8 @@ class Squeeze:
 
 
 class SqueezeMon:
-    def __init__(self, host="squeeze", port=9090, argv=sys.argv):
-        self.config = ConfigParser()
+    def __init__(self, config, host, port=9090):
+        self.config = config
         self.byid = {}
         self._players = None
         self.host = host
@@ -130,14 +131,6 @@ class SqueezeMon:
         self.thr = Thread(target=self.worker, daemon=True)
         self._queue = []
         self.cv = Condition()
-        options, remainder = getopt(argv, 'c:', ['config='])
-        config_file = CONFIG_FILE
-
-        for opt, arg in options:
-            if opt in ('-c', '--config'):
-                config_file = arg
-
-        self.config.read(config_file)
 
     async def __aenter__(self):
         await self.connect()
@@ -356,7 +349,19 @@ def run_and_wait(coros):
 
 
 async def runit():
-    x = SqueezeMon()
+    config = ConfigParser()
+    options, remainder = getopt(sys.argv, 'c:', ['config='])
+    config_file = CONFIG_FILE
+
+    for opt, arg in options:
+        if opt in ('-c', '--config'):
+            config_file = arg
+
+    config.read(config_file)
+    server = config.get(CONFIG, "server", fallback=None)
+    if not server:
+        server = find_server()[0]
+    x = SqueezeMon(config, host=server)
     async with x:
         # Get the list of players
         await x.get_players()
