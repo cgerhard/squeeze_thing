@@ -30,6 +30,10 @@ class Player(Thing):
         self._squeeze = squeeze
         squeeze.wt_set_property = self.set_property_x
         super().__init__(*arg)
+
+    def update(self, squeeze):
+        self._squeeze = squeeze
+        squeeze.wt_set_property = self.set_property_x
         
     def set_property(self, property_name, value):
         self.set_property_x(property_name, value)
@@ -120,9 +124,15 @@ async def run_async_webthing(rwt):
 
 class run_webthing:
     def __init__(self, players):
-        self.players = players
         self.things = [make_thing(t) for t in players]
         self.coros = [run_async_webthing(self)]
+
+    def update(self, players):
+        for thing in self.things:
+            for p in players:
+                if p.ident == thing._squeeze.ident:
+                    thing.update(p)
+
 
 
 if __name__ == '__main__':

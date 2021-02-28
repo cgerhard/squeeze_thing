@@ -15,6 +15,7 @@
 """
 
 CONFIG = "CONFIG"
+STATE_FILE = "state_file"
 CONFIG_FILE = "/usr/local/etc/squeeze_thing.cfg"
 STORE="/var/local/squeeze_thing/squeeze_players.json"
 from  threading import Thread, Condition
@@ -147,13 +148,13 @@ class SqueezeMon:
     async def get_players(self):
         """
         get the list of players. The list is first read from a state file
-        and any new palyers added to that state file. This is only done
+        and any new players added to that state file. This is only done
         to keep the order of the players the same, which the squeezeserver
-        does not garuntee. The order is importand as they need to appear
+        does not garuntee. The order is important as they need to appear
         as webthings in the same order each time so that http://hostname.local/0
         always refers to the same player.
         """
-        store = self.config.get(CONFIG, "state_file", fallback=STORE)
+        store = self.config.get(CONFIG, STATE_FILE, fallback=STORE)
         try:
             players = json.loads(open(store, "r").read())
         except Exception as exc:
@@ -258,7 +259,7 @@ class SqueezeMon:
         loop_forever = lines == 0
         while lines > 0 or loop_forever:
             x = (await self.reader.read(1)).decode('utf-8')
-            if not x:
+            if not x or x == '':
                 self.writer.close()
                 await self.connect()
                 await self.get_players()
@@ -350,17 +351,41 @@ def run_and_wait(coros):
 
 async def runit():
     config = ConfigParser()
-    options, remainder = getopt(sys.argv, 'c:', ['config='])
+    try:
+        options, remainder = getopt(sys.argv[1:], 'S:c:s:', ['state=', 'config=', 'server='])
+    except GetoptError as err:
+        print(err, file=sys.stderr)
+        print("Usage:", sys.argv[0], "[-S statefile][-c config][-s server]", file=sys.stderr)
+        sys.exit(1)
+
     config_file = CONFIG_FILE
+    server = None
+    store = None
 
     for opt, arg in options:
         if opt in ('-c', '--config'):
             config_file = arg
+        elif opt in ('-s', '--server'):
+            server = arg
+        elif opt in ('-S', '--state'):
+            global STORE
+            store = arg
 
-    config.read(config_file)
-    server = config.get(CONFIG, "server", fallback=None)
+    try:
+        f = open(config_file, 'r')
+        config.read_file(f)
+    except OSError as e:
+        if config_file != CONFIG_FILE:
+            raise
+
+    if store:
+        config.set(CONFIG, STATE_FILE, store)
+
     if not server:
-        server = find_server()[0]
+        server = config.get(CONFIG, "server", fallback=None)
+        if not server:
+            server = find_server()[0]
+
     x = SqueezeMon(config, host=server)
     async with x:
         # Get the list of players
