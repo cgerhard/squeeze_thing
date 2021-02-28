@@ -1,10 +1,17 @@
 # squeeze_thing
 
-Simple server for creating webthings from a squeezebox server.
+Simple server for creating webthings (https://webthings.io/) from a squeezebox server.
 
 Currently not much more than proof of concept quality.
 
-It will reconnect if the squeeze server is restarted, but how well that works I've not tested well.
+By default it will broadcast and use the first squeezeserver to respond. If you
+have multiple squeeze servers then you will need to use the configuration file.
+
+It will reconnect if the squeeze server is restarted. 
+
+Adding brand new players will require a restart but once it knows about a player it will remember it forever. So if a player disappears and reappers it should work even if the the server is restarted.
+
+Persistent state is stored in the /var/local/squeeze_thing directory. If that state is lost then all the squeezethings that your webthing server knows about will have to be deleted and readded.
 
 All the things are labeled "Thing" and I've not worked out how to change that.
 

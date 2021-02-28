@@ -262,7 +262,6 @@ class SqueezeMon:
             if not x or x == '':
                 self.writer.close()
                 await self.connect()
-                await self.get_players()
                 await self.subscribe()
                 print("reconnected", flush=True)
                 res=[]
